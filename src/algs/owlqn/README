@@ -1,0 +1,16 @@
+This directory contains an implementation of the Orthant-Wise Limited-memory Quasi-Newton algorihtm that minimizes functions of the form:
+\begin{align*}
+f(w) = loss(w) + \lamda \norm{w}_1
+\end{align*}
+where loss(\cdot) is an arbitrary differentiable convex loss function, and $\norm{w}_1 is the L1 norm of the parameter vector $w$. This algorithm is described in the paper:
+
+Galen Andrew and Jianfeng Gao, "Scalable training of L1-regularized log-linear models", in ICML 2007.
+
+The authors of this paper have their own C++ implementation of this algorithm:
+
+https://www.microsoft.com/en-us/download/details.aspx?id=52452&from=http%3A%2F%2Fresearch.microsoft.com%2Fen-us%2Fdownloads%2Fb1eb1016-1738-4bd5-83a9-370c9d498a03
+
+I did not use any code from this implementation, nor did I look at this code when I was implementing this algorithm. 
+
+David Scott Hunter
+March 2019
