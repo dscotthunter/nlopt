@@ -41,6 +41,7 @@
 #include "cdirect.h"
 
 #include "luksan.h"
+#include "owlqn.h"
 
 #include "crs.h"
 
@@ -576,6 +577,9 @@ static nlopt_result nlopt_optimize_(nlopt_opt opt, double *x, double *minf)
     case NLOPT_LD_VAR2:
         return luksan_plip(ni, f, f_data, lb, ub, x, minf, &stop, opt->vector_storage, algorithm == NLOPT_LD_VAR1 ? 1 : 2);
 
+    case NLOPT_LD_OWLQN:
+        return 
+    
     case NLOPT_LD_TNEWTON:
     case NLOPT_LD_TNEWTON_RESTART:
     case NLOPT_LD_TNEWTON_PRECOND:
