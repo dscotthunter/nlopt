@@ -1,6 +1,7 @@
 #include <stdlib.h> 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "owlqn.h"
 
@@ -9,13 +10,7 @@
 
 int owlqn_verbose = 1;
 
-typedef struct { 
-    nlopt_func f; /* This is just the loss function */
-    void *f_data;
-    int m; /* the number of variables to remember */
-    double *lambda, *gradtmp;
-    nlopt_stopping *stop;
-} owlqn_data;
+
 
 /* This is used to store information from each step, based on the paper
  * Updating Quasi-Newton Matrices with Limited Storage
@@ -40,9 +35,9 @@ double l1norm_vector(int n, double *x){
 }
 
 /* computes dot product of x and y */
-void vecdot_owlqn(double *out, int n, double *x, double *y){
+void vecdot_owlqn(double *out, double *x, double *y, int n){
     int i;
-    double *out = 0.;
+    *out = 0.;
     for (i = 0; i < n; ++i){
         *out += x[i] * y[i];
     }
@@ -119,7 +114,7 @@ void pseudo_gradient(double* pseudograd,
             *gmax = fabs(pseudograd[i]);
         }
         else if(*gmax >= fabs(pseudograd[i])){
-            *gamx = fabs(pseudograd[i]);
+            *gmax = fabs(pseudograd[i]);
         }
     }
     return;
@@ -132,14 +127,14 @@ void pseudo_gradient(double* pseudograd,
 void check_stopping_criteria(int *n, int *owlqn_iters, 
         double *xcur, double *xprev,
         double *fcur, double *fprev, 
-        double *pseudo_gradient, nlopt_result *ret, 
+        double *gmax, nlopt_result *ret, 
         nlopt_stopping *stop)
 {
   if (nlopt_stop_forced(stop)) {
     *ret = NLOPT_FORCED_STOP;
     return;
   }
-  if (*f <= stop->minf_max){
+  if (*fcur <= stop->minf_max){
     *ret = NLOPT_MINF_MAX_REACHED;
     return;
   }
@@ -200,9 +195,9 @@ int line_search_owlqn(int n,
         owlqn_project(xcur, orthant, n);
        
         /* Evaluate the new function and gradient values */
-        *fcur = *d.f(n, xcur, cgrad, *d.f_data);
+        *fcur = (*d).f(n, xcur, cgrad, (*d).f_data);
         normx = l1norm_vector(n, xcur); 
-        *fcur += normx * (*d.lambda); 
+        *fcur += normx * (*d->lambda); 
         ++*(stop->nevals_p);    
         ++count;
 
@@ -236,10 +231,9 @@ int line_search_owlqn(int n,
 
 
 /* The minimization procedure */
-nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data,
+nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda */
                   double *x, /* in: initial guess, out: minimizer */
 		          nlopt_stopping *stop, 
-                  double *lambda,
                   int m)
 {
     owlqn_data d;
@@ -256,19 +250,22 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data,
     int end = 0, k = 1, bound, j;
     double yts, yty, beta;
 
+    double double_tmp;
+    double * double_pointer_tmp;
+
     
     d.f = f;
-    d.f_data = d_data;
-    d.lambda = lambda;
+    d.f_data = f_data;
+    d.lambda = (double *)f_data;
     d.stop = stop;
 
     iteration_data *limited_memory=NULL, *iteration=NULL;
     
     /* Set the number of variables to store if it is 0 */
     if (m<=0){
-        m = MAX2(MEMAVAIL/n, 10);
+        m = MAX(MEMAVAIL/n, 10);
         if (mfv && mfv <= m){
-            m = MAX2(mf, 1);
+            m = MAX(mfv, 1);
         }
     }
 
@@ -281,7 +278,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data,
     if (!work) return NLOPT_OUT_OF_MEMORY;
     xcur = work;
     xprev = xcur + n;
-    cgad = xprev + n;
+    cgrad = xprev + n;
     pgrad = cgrad + n;
     pseudograd = pgrad + n;
     cgradtmp = pseudograd + n;
@@ -298,26 +295,26 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data,
     if (!limited_memory) return NLOPT_OUT_OF_MEMORY;
 
     /* Initialize storage for limited memory */
-    for (i = 0; i<m, ++i){
-        it = &lm[i];
-        it->alpha = 0;
-        it->ys = 0;
-        it->s = (double*) malloc(sizeof(double) * n);
-        it->y = (double*) malloc(sizeof(double) * n);
-        if ((!it->s) || (!it->y)) return NLOPT_OUT_OF_MEMORY;
+    for (i = 0; i<m; ++i){
+        iteration = &limited_memory[i];
+        iteration->alpha = 0;
+        iteration->ys = 0;
+        iteration->s = (double*) malloc(sizeof(double) * n);
+        iteration->y = (double*) malloc(sizeof(double) * n);
+        if ((!iteration->s) || (!iteration->y)) return NLOPT_OUT_OF_MEMORY;
     }
     fprev = HUGE_VAL;
     /********** evaluate function, gradient, and pseudo *************/
     fcur = f(n, xcur, cgrad, f_data);
     
     /* determine the pseudogradient and the first search direction */
-    normx = l1norm_vector(n, xcur); 
-    fcur += normx * (*d.lambda); 
+    l1norm = l1norm_vector(n, xcur); 
+    fcur += l1norm * (*d.lambda); 
     ++*(stop->nevals_p);
     pseudo_gradient(pseudograd, xcur, cgrad, n, *d.lambda, gmax);
     memcpy(direction, pseudograd, sizeof(double) * n);
     
-    vecdot_owlqn(&step, n, direction, direction);
+    vecdot_owlqn(&step, direction, direction, n);
     step = 1. / sqrt(step);
     
     if (nlopt_stop_time(stop)) {
@@ -327,7 +324,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data,
     do {
         /* Check all of the various stopping criteria */ 
         check_stopping_criteria(&n, &owlqn_iters, xcur, xprev,
-                &fcur, &fprev, pseudograd, &ret, stop);
+                &fcur, &fprev, gmax, &ret, stop);
         
         if (ret != NLOPT_SUCCESS){
             goto done;
@@ -344,7 +341,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data,
 
         /* Line search for an optimal step */
         ls = line_search_owlqn(n, xcur, &fcur, cgrad, direction, 
-                 step, orthant, xprev, pseudograd, &d, stop);
+                 &step, orthant, xprev, pseudograd, &d, stop);
         pseudo_gradient(pseudograd, xcur, cgrad, n, *d.lambda, gmax);  
         
         if (ls < 0){
@@ -376,6 +373,8 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data,
 
         /* steepest direction */ 
         memcpy(direction, pseudograd, sizeof(double) * n);
+
+        
         
         /* Do the loops for computing new direction from page 799
          * of Nocedal paper */
@@ -385,7 +384,9 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data,
             iteration = &limited_memory[j];
             vecdot_owlqn(&iteration->alpha, iteration->s, direction, n);
             iteration->alpha /= iteration->ys;
-            vecadd_owlqn(direction, iteration->y, -iteration->alpha, n);
+            double_tmp = - iteration->alpha;
+            double_pointer_tmp = &double_tmp;
+            vecadd_owlqn(direction, iteration->y, double_pointer_tmp, n);
         }
         /* We need to scale the direction by H_0 here */
         
@@ -393,7 +394,9 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data,
             iteration = &limited_memory[j];
             vecdot_owlqn(&beta, iteration->y, direction, n);
             beta /= iteration->ys;
-            vecadd_owlqn(direction, iteration->s, iteration->alpha - beta, n);
+            double_tmp = iteration->alpha - beta;
+            double_pointer_tmp = &double_tmp;
+            vecadd_owlqn(direction, iteration->s, double_pointer_tmp, n);
             j = (j + 1) % m;
         }
 
@@ -404,6 +407,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data,
             }
         }
         
+        memcpy(x, xcur, sizeof(double) * n);
         step = 1.0;
 
 

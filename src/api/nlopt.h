@@ -99,6 +99,8 @@ typedef enum {
 
     NLOPT_LD_LBFGS,
 
+    NLOPT_LD_OWLQN,
+
     NLOPT_LN_PRAXIS,
 
     NLOPT_LD_VAR1,
