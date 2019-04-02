@@ -63,6 +63,13 @@ void vecdiff_owlqn(double *x, double *y, double *z, int n){
     return;
 }
 
+void vecnegcopy_owlqn(double *x, double *y, int n){
+    int i;
+    for (i = 0; i < n; ++i){
+        x[i] = -y[i];
+    }
+    return;
+}
 
 /* Scale the vector x by d */
 void vecscale_owlqn(double *x, double scale, int n){
@@ -181,10 +188,10 @@ int line_search_owlqn(int n,
         owlqn_data *d, nlopt_stopping *stop)
 {
     int i, count =0;
-    double width = 0.1, normx = 0.;
+    double width = 0.5, normx = 0.;
     double f_initial = *fcur, dgtest;
-    double gamma = 1e-4;
-    double min_step = 1e-20;
+    double gamma = 1e-6;
+    double min_step = 1e-40;
     double max_step = 1e20;
     int max_linesearch = 20;
 
@@ -194,7 +201,7 @@ int line_search_owlqn(int n,
 
     /* Choose the orthant search direction */
     for (i = 0; i < n; ++i){
-        orthant[i] = (xprev[i] == 0.) ? -pseudograd_prev[i] : pseudograd_prev[i];
+        orthant[i] = (xprev[i] == 0.) ? -pseudograd_prev[i] : xprev[i];
     }
 
 
@@ -212,6 +219,7 @@ int line_search_owlqn(int n,
         *fcur += normx * (*d->lambda); 
         ++*(stop->nevals_p);    
         ++count;
+        printf("Value of finitial - fcur: %g\n", f_initial - *fcur); 
 
         /* Check the decrease condition in the paper */
         dgtest = 0.;
@@ -327,7 +335,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda,
     fcur += l1norm * (*d.lambda); 
     ++*(stop->nevals_p); 
     pseudo_gradient(pseudograd, xcur, cgrad, n, *d.lambda, gmax);
-    memcpy(direction, pseudograd, sizeof(double) * n);
+    vecnegcopy_owlqn(direction, pseudograd,  n);
     
     vecdot_owlqn(&step, direction, direction, n);
     step = 1. / sqrt(step);
@@ -387,7 +395,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda,
         end = (end+1) % m;
 
         /* steepest direction */ 
-        memcpy(direction, pseudograd, sizeof(double) * n);
+        vecnegcopy_owlqn(direction, pseudograd,  n);
 
         
         

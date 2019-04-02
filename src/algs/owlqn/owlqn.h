@@ -25,6 +25,7 @@ void vecdot_owlqn(double *out, double *x, double *y, int n);
 void vecadd_owlqn(double *x, double *y, double *c, int n);
 void vecdiff_owlqn(double *x, double *y, double *z, int n);
 void vecscale_owlqn(double *x, double scale, int n);
+void vecnegcopy_owlqn(double *x, double *y, int n);
 void owlqn_project(double *x, double *y, int n);
 
 void pseudo_gradient(double* pseudo_grad,
