@@ -63,6 +63,18 @@ void vecdiff_owlqn(double *x, double *y, double *z, int n){
     return;
 }
 
+
+/* Scale the vector x by d */
+void vecscale_owlqn(double *x, double scale, int n){
+    int i;
+
+    for (i = 0; i < n; ++i){
+        x[i] *= scale;
+    }
+    return;
+}
+
+
 /* returns x, where x is projected onto orthant containing y */
 void owlqn_project(double *x, double *y, int n){
     int i;
@@ -77,7 +89,7 @@ void owlqn_project(double *x, double *y, int n){
 
 
 /* OWL-QN specific helper functions */
-void pseudo_gradient(double* pseudograd,
+void pseudo_gradient(double* pseudo_grad,
         const double *x,
         const double *grad, 
         const int n,
@@ -89,32 +101,32 @@ void pseudo_gradient(double* pseudograd,
     int i;    
     for (i = 0; i < n; ++i){
         if (x[i] < 0.){
-            pseudograd[i] = grad[i] - lambda;
+            pseudo_grad[i] = grad[i] - lambda;
         }
         else if (x[i] > 0.){
-            pseudograd[i] = grad[i] + lambda;
+            pseudo_grad[i] = grad[i] + lambda;
         }
         else{
             /* Not differentiable at this point */
             if (grad[i] < - lambda){
                 /* Then right partial is negative so we take that */
-                pseudograd[i] = grad[i] + lambda;
+                pseudo_grad[i] = grad[i] + lambda;
             }
             else if (lambda < grad[i]){
                 /* Then left partial derivative is positive so take that */
-                pseudograd[i] = grad[i] - lambda;
+                pseudo_grad[i] = grad[i] - lambda;
             }
             else{
                 /* otherwise case in paper */
-                pseudograd[i] = 0.;
+                pseudo_grad[i] = 0.;
             }
         }
 
         if (i<=0){
-            *gmax = fabs(pseudograd[i]);
+            *gmax = fabs(pseudo_grad[i]);
         }
-        else if(*gmax >= fabs(pseudograd[i])){
-            *gmax = fabs(pseudograd[i]);
+        else if(*gmax >= fabs(pseudo_grad[i])){
+            *gmax = fabs(pseudo_grad[i]);
         }
     }
     return;
@@ -169,7 +181,7 @@ int line_search_owlqn(int n,
         owlqn_data *d, nlopt_stopping *stop)
 {
     int i, count =0;
-    double width = 0.5, normx = 0.;
+    double width = 0.1, normx = 0.;
     double f_initial = *fcur, dgtest;
     double gamma = 1e-4;
     double min_step = 1e-20;
@@ -231,16 +243,18 @@ int line_search_owlqn(int n,
 
 
 /* The minimization procedure */
-nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda */
+nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda, as well as necessary data for function */
                   double *x, /* in: initial guess, out: minimizer */
 		          nlopt_stopping *stop, 
                   int m)
 {
+    if (owlqn_verbose){
+        printf("Initializing Minimize");
+    }
     owlqn_data d;
-    nlopt_result ret = NLOPT_SUCCESS;
-    double *work, *xcur, *xprev, *cgrad, *pgrad, 
-           *pseudograd, *cgradtmp, fcur, fprev, l1norm, 
-           *direction, *gmax, step, *orthant;
+    nlopt_result ret = NLOPT_SUCCESS; 
+    double *work, *xcur, *xprev, *cgrad, *pgrad,  *direction, *orthant, *pseudograd; 
+    double fcur, fprev, l1norm, step;
     int owlqn_iters = 0;
     int mfv = stop->maxeval;
 
@@ -253,10 +267,10 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda 
     double double_tmp;
     double * double_pointer_tmp;
 
-    
+     
     d.f = f;
     d.f_data = f_data;
-    d.lambda = (double *)f_data;
+    d.lambda = ((double**)f_data)[0];
     d.stop = stop;
 
     iteration_data *limited_memory=NULL, *iteration=NULL;
@@ -274,17 +288,18 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda 
 
     /* must store current point, previous point, current gradient, previous gradient, current pseudogradient, temporary gradient
      * search direction, orthant */
-    work = (double *) malloc(sizeof(double) * 8 * n);
+    work = (double *) malloc(sizeof(double) * 7 * n);
     if (!work) return NLOPT_OUT_OF_MEMORY;
     xcur = work;
     xprev = xcur + n;
     cgrad = xprev + n;
     pgrad = cgrad + n;
-    pseudograd = pgrad + n;
-    cgradtmp = pseudograd + n;
-    direction = cgradtmp + n;
+    pseudograd = pgrad + n; 
+    direction = pseudograd + n;
     orthant = direction + n;
  
+    double *gmax;
+    gmax = (double *) malloc(sizeof(double)); 
 
     /* Initialize storage */
     memcpy(xcur, x, sizeof(double) * n);
@@ -310,7 +325,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda 
     /* determine the pseudogradient and the first search direction */
     l1norm = l1norm_vector(n, xcur); 
     fcur += l1norm * (*d.lambda); 
-    ++*(stop->nevals_p);
+    ++*(stop->nevals_p); 
     pseudo_gradient(pseudograd, xcur, cgrad, n, *d.lambda, gmax);
     memcpy(direction, pseudograd, sizeof(double) * n);
     
@@ -389,6 +404,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda 
             vecadd_owlqn(direction, iteration->y, double_pointer_tmp, n);
         }
         /* We need to scale the direction by H_0 here */
+        vecscale_owlqn(direction, yts / yty, n); 
         
         for (i = 0; i < bound; ++i){
             iteration = &limited_memory[j];
