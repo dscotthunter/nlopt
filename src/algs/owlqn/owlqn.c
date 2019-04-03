@@ -219,8 +219,7 @@ int line_search_owlqn(int n,
         *fcur += normx * (*d->lambda); 
         ++*(stop->nevals_p);    
         ++count;
-        printf("Value of finitial - fcur: %g\n", f_initial - *fcur); 
-
+        /*printf("f_initial - fcur: %g\n", f_initial - *fcur);*/
         /* Check the decrease condition in the paper */
         dgtest = 0.;
         for (i = 0; i < n; ++i){
@@ -356,11 +355,15 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda,
         if (owlqn_verbose){
             printf("Objective Value Step %d: %g\n", owlqn_iters, fcur);
         }
+        if (*gmax < 1e-4){
+            goto done;
+        }
 
         /* Store the current vectors and gradients */
         memcpy(xprev, xcur, sizeof(double) * n);
         memcpy(pgrad, cgrad, sizeof(double) * n);
         fprev = fcur;
+        
 
         /* Line search for an optimal step */
         ls = line_search_owlqn(n, xcur, &fcur, cgrad, direction, 
