@@ -295,8 +295,8 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda,
 
 
     /* must store current point, previous point, current gradient, previous gradient, current pseudogradient, temporary gradient
-     * search direction, orthant */
-    work = (double *) malloc(sizeof(double) * 7 * n);
+     * search direction, orthant, and gmax */
+    work = (double *) malloc(sizeof(double) * (7 * n + 1));
     if (!work) return NLOPT_OUT_OF_MEMORY;
     xcur = work;
     xprev = xcur + n;
@@ -307,7 +307,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda,
     orthant = direction + n;
  
     double *gmax;
-    gmax = (double *) malloc(sizeof(double)); 
+    gmax = orthant + 1; 
 
     /* Initialize storage */
     memcpy(xcur, x, sizeof(double) * n);
@@ -446,6 +446,11 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda,
 done:
     /* remember to free all of the memory */ 
     free(work);
+    for (i = 0; i<m; ++i){
+        iteration = &limited_memory[i];
+        free(iteration->s);
+        free(iteration->y);
+    }
     free(limited_memory);
     return ret;
 }
