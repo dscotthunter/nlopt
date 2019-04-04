@@ -578,7 +578,7 @@ static nlopt_result nlopt_optimize_(nlopt_opt opt, double *x, double *minf)
         return luksan_plip(ni, f, f_data, lb, ub, x, minf, &stop, opt->vector_storage, algorithm == NLOPT_LD_VAR1 ? 1 : 2);
 
     case NLOPT_LD_OWLQN:
-        return owlqn_minimize(ni, f, f_data, x, &stop, opt->vector_storage);
+        return owlqn_minimize(ni, f, f_data, x, minf, &stop, opt->vector_storage);
     
     case NLOPT_LD_TNEWTON:
     case NLOPT_LD_TNEWTON_RESTART:

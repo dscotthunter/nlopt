@@ -8,7 +8,7 @@
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
-int owlqn_verbose = 1;
+int owlqn_verbose = 0;
 
 
 
@@ -214,12 +214,12 @@ int line_search_owlqn(int n,
         owlqn_project(xcur, orthant, n);
        
         /* Evaluate the new function and gradient values */
-        *fcur = (*d).f(n, xcur, cgrad, (*d).f_data);
+        *fcur = (*d).f(n, xcur, cgrad, d->f_data);
         normx = l1norm_vector(n, xcur); 
-        *fcur += normx * (*d->lambda); 
+        (*fcur) += normx * (*d->lambda); 
         ++*(stop->nevals_p);    
         ++count;
-        /*printf("f_initial - fcur: %g\n", f_initial - *fcur);*/
+        /*printf("fcur - finitial: %g\n", *fcur - f_initial); */
         /* Check the decrease condition in the paper */
         dgtest = 0.;
         for (i = 0; i < n; ++i){
@@ -252,7 +252,8 @@ int line_search_owlqn(int n,
 /* The minimization procedure */
 nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda, as well as necessary data for function */
                   double *x, /* in: initial guess, out: minimizer */
-		          nlopt_stopping *stop, 
+		          double *minf,
+                  nlopt_stopping *stop, 
                   int m)
 {
     if (owlqn_verbose){
@@ -276,8 +277,8 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda,
 
      
     d.f = f;
-    d.f_data = f_data;
-    d.lambda = ((double**)f_data)[0];
+    d.f_data = (function_data*) f_data;
+    d.lambda = d.f_data->lambda;
     d.stop = stop;
 
     iteration_data *limited_memory=NULL, *iteration=NULL;
@@ -436,6 +437,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda,
         
         memcpy(x, xcur, sizeof(double) * n);
         step = 1.0;
+        *minf = fcur;
 
 
 

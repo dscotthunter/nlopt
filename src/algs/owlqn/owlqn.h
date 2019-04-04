@@ -11,9 +11,20 @@ extern "C"
 
 extern int owlqn_verbose;
 
+/* I am using this because I am sick of pointer errors and need to 
+ * find them */
+typedef struct{
+    double *lambda; 
+    int samples;
+    double * params;
+    double *output;
+    double ** data;
+} function_data;
+
+
 typedef struct { 
     nlopt_func f; /* This is just the loss function */
-    void *f_data;
+    function_data *f_data;
     int m; /* the number of variables to remember */
     double *lambda, *gradtmp;
     nlopt_stopping *stop;
@@ -52,8 +63,9 @@ int line_search_owlqn(int n,
 
 /* The main function */
 nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* f_data stores lambda */
-                  double *x, /* in: initial guess, out: minimizer */
-		  nlopt_stopping *stop,
+          double *x, /* in: initial guess, out: minimizer */
+		  double *minf,
+          nlopt_stopping *stop,
           int m); /* m is the amount of memory */
 
 #define MEMAVAIL 1310720  /* I am using this much because that is what Professor Johnson uses in luksan/ for LBFGS */
