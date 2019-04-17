@@ -160,3 +160,7 @@ function ccsa_quadratic_minimize(
     we return the value of x that is the optimum... I could improve this later
     =#
 end
+
+
+
+println("Hello")
