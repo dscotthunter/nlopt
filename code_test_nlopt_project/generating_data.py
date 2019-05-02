@@ -20,6 +20,8 @@ with open("data_as_csv/boston.csv", 'w') as csvfile:
 breast_cancer = load_breast_cancer()
 X = breast_cancer.data 
 Y = breast_cancer.target 
+print(X.shape)
+print(Y.shape)
 data = []
 for num in range(X.shape[0]):
 	entry = X[num,:].tolist()
