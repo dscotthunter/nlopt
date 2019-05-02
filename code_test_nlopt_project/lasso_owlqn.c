@@ -39,36 +39,40 @@ double myfunc(unsigned n, const double *x, double *grad, void *my_func_data)
     return error;
 }
 
-const char* getfield(char* line, int num)
+void get_field(char* line, double *output, double **data, int n, int j)
 {
     const char* tok;
-    for (tok = strtok(line, ";");
+    int i = 0;
+    for (tok = strtok(line, ",");
             tok && *tok;
-            tok = strtok(NULL, ";\n"))
+            tok = strtok(NULL, ",\n"))
     {
-        if (!--num)
-            return tok;
+        if (i<n){
+            data[j][i] = atof(tok);
+        }
+        else if(i==n){
+            output[j] = atof(tok);
+        }
+        i++;
+     
     }
-    return NULL;
+    return;
 }
 
-void get_data(int samples, int n, double * output, double **output)
+void get_data(int samples, int n, double * output, double **data)
 {
     int i;
     int j = 0;
     FILE* stream = fopen("data_as_csv/boston.csv", "r");
     char line[1024];
     while (fgets(line, 1024, stream))
-    {
+    { 
         char* tmp = strdup(line);
-        for(i=1; i<=n; ++i){
-            data[j][i-1] = atof(getfield(tmp, i));
-        }
-        output[j] = atof(getfield(tmp, n+1))
-        // NOTE strtok clobbers tmp
+        get_field(tmp, output, data, n, j);
         free(tmp);
         ++j;
     }
+    return;
 }
 
 
@@ -98,7 +102,8 @@ int main(){
         data[i] = (double *) malloc(n * sizeof(double));
     }
 
-    
+    get_data(samples, n, output, data);
+
 
 
     my_data.lambda = lambda;
@@ -114,7 +119,7 @@ int main(){
     nlopt_set_min_objective(opt, myfunc, f_data);
 
     double *tol = (double *) malloc(sizeof(double));
-    *tol = 1e-3;
+    *tol = 1e-5;
     nlopt_set_xtol_abs(opt, tol);
     double *x ; 
     x = (double *) malloc(sizeof(double) * n);
@@ -127,11 +132,13 @@ int main(){
         printf("nlopt failed!\n");
         printf("OPT output: %d\n", nlopt_optimize(opt, x, &minf));
     }
-    
+   else{
+        printf("found minimum at f(%g,%g) = %0.10g\n", x[0], x[1], minf);
+    } 
+      
 
     nlopt_destroy(opt);
     free(x);
-    free(params);
     
     free(data);
     free(output);
