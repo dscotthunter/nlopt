@@ -19,6 +19,7 @@
 # build output: prefer out-of-tree builds
 build/
 test_hunter/
+tutorial*
 
 # MacOS
 .DS_Store

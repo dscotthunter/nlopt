@@ -1,4 +1,4 @@
-include("ccsa_quadratic_sparse.jl")
+include("../ccsa_quadratic_sparse.jl")
 
 function myfunc(x::Vector{Float64}, grad::Vector{Float64})::Float64
     # minimizing (x[1] - 2)^2 + abs(x)
