@@ -156,7 +156,7 @@ end
 
 function nlopt_stop_x(oldx::Vector{Float64}, x::Vector{Float64})::Bool
     xtol_rel = 1e-8
-    xtol_abs = 1e-10
+    xtol_abs = 1e-5
     if (norm(x - oldx) < xtol_rel * norm(x))
         return true
     end
@@ -335,6 +335,7 @@ function ccsa_quadratic_minimize(
             return dd.xcur
         end
         dd.x = deepcopy(dd.xcur)
+
         # Done with inner iteration so updating things for outer iteration
         rho = max(0.1*rho, CCSA_RHOMIN)
         for i=1:m
@@ -363,6 +364,10 @@ function ccsa_quadratic_minimize(
                     println("       CCSA sigma[$j] -> $(dd.sigma[j])")
                 end
             end
+        end
+        if ccsa_verbose
+            println("x : $(dd.x)\n")
+            println("minf : $(minf)\n")
         end
     end
     return dd.xcur

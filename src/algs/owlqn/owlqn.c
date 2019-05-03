@@ -157,7 +157,7 @@ void check_stopping_criteria(int *n, int *owlqn_iters,
     *ret = NLOPT_MINF_MAX_REACHED;
     return;
   }
-  if (*gmax <= 1e-8){
+  if (*gmax <= 1e-5){
     *ret = NLOPT_SUCCESS;
     return;
   }
@@ -356,7 +356,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda,
         if (owlqn_verbose){
             printf("Objective Value Step %d: %g\n", owlqn_iters, fcur);
         }
-        if (*gmax < 1e-4){
+        if (*gmax < 1e-5){
             goto done;
         }
 

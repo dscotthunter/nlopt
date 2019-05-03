@@ -119,7 +119,7 @@ int main(){
     nlopt_set_min_objective(opt, myfunc, f_data);
 
     double *tol = (double *) malloc(sizeof(double));
-    *tol = 1e-5;
+    *tol = 1e-10;
     nlopt_set_xtol_abs(opt, tol);
     double *x ; 
     x = (double *) malloc(sizeof(double) * n);
@@ -128,11 +128,13 @@ int main(){
     }
 
     double minf;
-    if (nlopt_optimize(opt, x, &minf) < 0) {
+    int out = nlopt_optimize(opt, x, &minf);
+    if (out < 0) {
         printf("nlopt failed!\n");
-        printf("OPT output: %d\n", nlopt_optimize(opt, x, &minf));
-    }
+        printf("OPT output: %d\n", out);
+   }
    else{
+        printf("OPT output: %d\n", out);
         printf("found minimum at f(%g,%g) = %0.10g\n", x[0], x[1], minf);
     } 
       
