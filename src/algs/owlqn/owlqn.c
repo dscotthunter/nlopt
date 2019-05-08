@@ -132,7 +132,7 @@ void pseudo_gradient(double* pseudo_grad,
         if (i<=0){
             *gmax = fabs(pseudo_grad[i]);
         }
-        else if(*gmax >= fabs(pseudo_grad[i])){
+        else if(*gmax < fabs(pseudo_grad[i])){
             *gmax = fabs(pseudo_grad[i]);
         }
     }
@@ -157,7 +157,7 @@ void check_stopping_criteria(int *n, int *owlqn_iters,
     *ret = NLOPT_MINF_MAX_REACHED;
     return;
   }
-  if (*gmax <= 1e-5){
+  if (*gmax <= 1e-2){
     *ret = NLOPT_SUCCESS;
     return;
   }
@@ -356,7 +356,7 @@ nlopt_result owlqn_minimize(int n, nlopt_func f, void *f_data, /* stores lambda,
         if (owlqn_verbose){
             printf("Objective Value Step %d: %g\n", owlqn_iters, fcur);
         }
-        if (*gmax < 1e-5){
+        if (*gmax < 1e-2){
             goto done;
         }
 

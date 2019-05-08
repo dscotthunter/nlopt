@@ -18,25 +18,41 @@ double myfunc(unsigned n, const double *x, double *grad, void *my_func_data)
     int i, j;
     function_data * my_data = (function_data*) my_func_data;
     int samples = my_data->samples;
-    double *output = my_data->output;
+    const double *output = my_data->output;
     double **data = my_data->data;
-    double error = 0.0;
-    double error2;
+    double neg_log_likelihood = 0.0;
+    double value;
     for (i = 0; i < n; ++i){
         grad[i] = 0.;
     }
     for (i = 0; i < samples; ++i){
-        error2 = output[i]; 
+        value = 0.0; 
         for (j = 0; j < n; ++j){
-            error2 -= x[j] * data[i][j];
+            value += x[j] * data[i][j];
         }
-        error += (error2 * error2);
+
+        if (output[i] > 0.95){ 
+            neg_log_likelihood += log( 1.0 + exp(-value) );
+        }
+        else if(output[i] < 0.05){
+            neg_log_likelihood += log( 1.0 + exp(value) );
+        }
+        else{
+            printf("ERROR IN VALUE: %f\n", output[i]);
+        }
+
         for (j = 0; j < n; ++j){
-            grad[j] -= 2.0 * data[i][j] * error2;
+            grad[j] -= ( output[i] - (1.0 / (1.0 + exp( -value )) )) * data[i][j] ;
         }
     }
-
-    return error;
+    double gmax = 0.0;
+    for (j = 0; j < n; ++j){
+        if (gmax <= fabs(grad[j])){
+            gmax = fabs(grad[j]); 
+        }
+    }
+    printf("%f\n", gmax);
+    return neg_log_likelihood;
 }
 
 void get_field(char* line, double *output, double **data, int n, int j)
@@ -63,7 +79,7 @@ void get_data(int samples, int n, double * output, double **data)
 {
     int i;
     int j = 0;
-    FILE* stream = fopen("data_as_csv/boston.csv", "r");
+    FILE* stream = fopen("data_as_csv/breast_cancer.csv", "r");
     char line[1024];
     while (fgets(line, 1024, stream))
     { 
@@ -89,9 +105,9 @@ int main(){
     
     /* For boston data set samples = 506 and n = 13 */
     /* For breast cancer data set samples = 569 and n = 30 */
-    int samples = 506;
+    int samples = 569;
 
-    int n = 13;
+    int n = 30;
 
 
     double ** data = (double **) malloc(samples * sizeof(double*));

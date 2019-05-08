@@ -1,0 +1,7 @@
+#-lnlopt -lm
+# owlqn.c general.c options.c optimize.c stop.c timer.c mt19937ar.c -o tutorial 
+all: logistic_owlqn.c 
+	gcc -g logistic_owlqn.c -o tutorial_owlqn -lnlopt -lm 
+	./tutorial_owlqn
+clean:
+	${RM} tutorial_owlqn
