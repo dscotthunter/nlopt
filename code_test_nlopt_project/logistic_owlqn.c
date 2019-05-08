@@ -32,26 +32,28 @@ double myfunc(unsigned n, const double *x, double *grad, void *my_func_data)
         }
 
         if (output[i] > 0.95){ 
-            neg_log_likelihood += log( 1.0 + exp(-value) );
+            neg_log_likelihood += log( 1.0 + exp(-value) ) / samples;
         }
         else if(output[i] < 0.05){
-            neg_log_likelihood += log( 1.0 + exp(value) );
+            neg_log_likelihood += log( 1.0 + exp(value) ) / samples;
         }
         else{
             printf("ERROR IN VALUE: %f\n", output[i]);
         }
 
         for (j = 0; j < n; ++j){
-            grad[j] -= ( output[i] - (1.0 / (1.0 + exp( -value )) )) * data[i][j] ;
+            grad[j] -= ( output[i] - (1.0 / (1.0 + exp( -value )) )) * data[i][j] / samples;
         }
     }
+    
     double gmax = 0.0;
     for (j = 0; j < n; ++j){
         if (gmax <= fabs(grad[j])){
             gmax = fabs(grad[j]); 
         }
     }
-    printf("%f\n", gmax);
+   
+    printf("%f     %f\n", neg_log_likelihood, gmax);
     return neg_log_likelihood;
 }
 
@@ -135,7 +137,7 @@ int main(){
     nlopt_set_min_objective(opt, myfunc, f_data);
 
     double *tol = (double *) malloc(sizeof(double));
-    *tol = 1e-10;
+    *tol = 1e-20;
     nlopt_set_xtol_abs(opt, tol);
     double *x ; 
     x = (double *) malloc(sizeof(double) * n);
