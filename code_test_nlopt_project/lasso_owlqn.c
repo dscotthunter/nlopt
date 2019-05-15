@@ -35,6 +35,12 @@ double myfunc(unsigned n, const double *x, double *grad, void *my_func_data)
             grad[j] -= 2.0 * data[i][j] * error2;
         }
     }
+    double error_full = 0.0;
+    error_full += error;
+    for (j = 0; j < n; ++j){
+        error_full += *(my_data->lambda) * fabs(x[j]);
+    }
+    printf("%f\n", error_full);
 
     return error;
 }
@@ -81,7 +87,7 @@ int main(){
     int i, j;
     
     double *lambda;
-    double lambda_double = 1. ;
+    double lambda_double = 10000. ;
     lambda = &lambda_double;
     nlopt_opt opt;
    
@@ -118,9 +124,11 @@ int main(){
     
     nlopt_set_min_objective(opt, myfunc, f_data);
 
-    double *tol = (double *) malloc(sizeof(double));
-    *tol = 1e-10;
-    nlopt_set_xtol_abs(opt, tol);
+    unsigned M = 10;
+    nlopt_set_vector_storage(opt, M);
+
+    double tol = 36716.4318521;
+    nlopt_set_stopval(opt, tol);
     double *x ; 
     x = (double *) malloc(sizeof(double) * n);
     for (i = 0; i < n; ++i){
@@ -135,7 +143,6 @@ int main(){
    }
    else{
         printf("OPT output: %d\n", out);
-        printf("found minimum at f(%g,%g) = %0.10g\n", x[0], x[1], minf);
     } 
       
 

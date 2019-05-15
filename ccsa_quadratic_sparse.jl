@@ -149,14 +149,14 @@ function gi(m::Int, n::Int, x::Vector{Float64}, grad::Vector{Float64}, d::dual_d
 end
 
 function nlopt_stop_ftol(vold::Float64, vnew::Float64)::Bool
-    reltol = 1e-14
-    abstol = 1e-8
+    reltol = 0.0
+    abstol = 0.0
     return (abs(vnew - vold) < abstol || abs(vnew - vold) < reltol * (abs(vnew) + abs(vold)) * 0.5 || (reltol > 0 && vnew == vold))
 end
 
 function nlopt_stop_x(oldx::Vector{Float64}, x::Vector{Float64})::Bool
-    xtol_rel = 1e-8
-    xtol_abs = 1e-5
+    xtol_rel = 0.0
+    xtol_abs = 0.0
     if (norm(x - oldx) < xtol_rel * norm(x))
         return true
     end
@@ -334,6 +334,10 @@ function ccsa_quadratic_minimize(
             end
             return dd.xcur
         end
+        # Within .1% for a given dataset -- used for testing
+        # if (fcur < 59.843537754)
+        #     return dd.xcur
+        # end
         dd.x = deepcopy(dd.xcur)
 
         # Done with inner iteration so updating things for outer iteration

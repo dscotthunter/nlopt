@@ -32,28 +32,27 @@ double myfunc(unsigned n, const double *x, double *grad, void *my_func_data)
         }
 
         if (output[i] > 0.95){ 
-            neg_log_likelihood += log( 1.0 + exp(-value) ) / samples;
+            neg_log_likelihood += log( 1.0 + exp(-value) ) ;
         }
         else if(output[i] < 0.05){
-            neg_log_likelihood += log( 1.0 + exp(value) ) / samples;
+            neg_log_likelihood += log( 1.0 + exp(value) ) ;
         }
         else{
             printf("ERROR IN VALUE: %f\n", output[i]);
         }
 
         for (j = 0; j < n; ++j){
-            grad[j] -= ( output[i] - (1.0 / (1.0 + exp( -value )) )) * data[i][j] / samples;
+            grad[j] -= ( output[i] - (1.0 / (1.0 + exp( -value )) )) * data[i][j] ;
         }
     }
     
-    double gmax = 0.0;
+    double error_full = 0.0;
+    error_full += neg_log_likelihood;
     for (j = 0; j < n; ++j){
-        if (gmax <= fabs(grad[j])){
-            gmax = fabs(grad[j]); 
-        }
+        error_full += *(my_data->lambda) * fabs(x[j]);
     }
-   
-    printf("%f     %f\n", neg_log_likelihood, gmax);
+    printf("%f\n", error_full);
+
     return neg_log_likelihood;
 }
 
@@ -136,14 +135,16 @@ int main(){
     
     nlopt_set_min_objective(opt, myfunc, f_data);
 
-    double *tol = (double *) malloc(sizeof(double));
-    *tol = 1e-20;
-    nlopt_set_xtol_abs(opt, tol);
+    double tol = 59.843537754;
+    nlopt_set_stopval(opt, tol);
     double *x ; 
     x = (double *) malloc(sizeof(double) * n);
     for (i = 0; i < n; ++i){
         x[i] = 0.0;
     }
+
+    unsigned M = 2;
+    nlopt_set_vector_storage(opt, M);
 
     double minf;
     int out = nlopt_optimize(opt, x, &minf);
@@ -153,8 +154,8 @@ int main(){
    }
    else{
         printf("OPT output: %d\n", out);
-        printf("found minimum at f(%g,%g) = %0.10g\n", x[0], x[1], minf);
     } 
+    printf("%d\n", nlopt_get_vector_storage(opt));
       
 
     nlopt_destroy(opt);

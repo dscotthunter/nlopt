@@ -75,7 +75,7 @@ end
 data = CSV.read("/Users/davidhunter/nlopt/code_test_nlopt_project/data_as_csv/breast_cancer.csv", header=false)
 samples = size(data)[1]
 n = size(data)[2]
-print(size(data))
+
 A = convert(Matrix{Float64}, data[:,1:(n-1)])
 y = convert(Vector{Float64}, data[:,n])
 n -= 1

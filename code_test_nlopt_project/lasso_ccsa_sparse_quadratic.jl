@@ -1,5 +1,6 @@
 include("../ccsa_quadratic_sparse.jl")
 using CSV
+using DelimitedFiles
 
 function myfunc(x::Vector{Float64}, grad::Vector{Float64}, A::Matrix{Float64}, y::Vector{Float64})::Float64
     # minimizing (x[1] - 2)^2 + abs(x)
@@ -14,11 +15,14 @@ function myfunc(x::Vector{Float64}, grad::Vector{Float64}, A::Matrix{Float64}, y
             if i <= n_div
                 grad[i] = copy(grad_copy[i])
             else
-                grad[i] = 1.0
+                grad[i] = 10000.0
             end
         end
     end
-    return sum( error.^2 ) + sum(x[(n_div+1):n])
+    io = open("/Users/davidhunter/nlopt/code_test_nlopt_project/output_data/lambda10000_ccsa.txt", "a")
+    writedlm(io,sum( error.^2 ) + sum(10000.0*x[(n_div+1):n]))
+    close(io)
+    return sum( error.^2 ) + sum(10000.0*x[(n_div+1):n])
 end
 
 function myconstraints(x::Vector{Float64}, dfcdx::SparseMatrixCSC{Float64, Int64})::Vector{Float64}
@@ -55,7 +59,7 @@ end
 data = CSV.read("/Users/davidhunter/nlopt/code_test_nlopt_project/data_as_csv/boston.csv", header=false)
 samples = size(data)[1]
 n = size(data)[2]
-print(size(data))
+
 A = convert(Matrix{Float64}, data[:,1:(n-1)])
 y = convert(Vector{Float64}, data[:,n])
 n -= 1
@@ -66,9 +70,3 @@ lb = fill(-Inf, n)
 ub = fill(Inf,n)
 x = zeros(Float64, n)
 x = ccsa_quadratic_minimize(n, (x,grad) -> myfunc(x,grad,A,y), n, myconstraints, lb, ub, x)
-println(x[1:n_div])
-println("\n")
-println(x[(n_div+1):n])
-println("\n")
-println(myconstraints(x, spzeros(n,n)))
-println(myfunc(x, zeros(0),A,y))

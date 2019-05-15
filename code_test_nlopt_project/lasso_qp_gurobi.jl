@@ -16,7 +16,7 @@ n_div = convert(Int, n/2)
 model = Model(with_optimizer(Gurobi.Optimizer))
 sense = MOI.MIN_SENSE
 @variable(model, x[1:n], start=0.0)
-@objective(model, sense, sum((y - A*x[1:n_div]).^2 ) + sum(x[(n_div+1):n]) )
+@objective(model, sense, sum((y - A*x[1:n_div]).^2 ) + sum(10000.0*x[(n_div+1):n]) )
 @constraint(model, con1[i = 1:n_div], x[i] <= x[n_div+i])
 @constraint(model, con2[i = 1:n_div], -x[i] <= x[n_div+i])
 JuMP.optimize!(model)

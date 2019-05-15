@@ -1,5 +1,6 @@
 using CSV
 using NLopt
+using DelimitedFiles
 
 function myfunc(x::Vector, grad::Vector, A::Matrix{Float64}, y::Vector{Float64})
     @assert length(x) % 2 == 0
@@ -37,8 +38,11 @@ function myfunc(x::Vector, grad::Vector, A::Matrix{Float64}, y::Vector{Float64})
             end
         end
     end
-    println(neg_log_likelihood + sum(x[(n_div+1):n]))
-    return neg_log_likelihood + sum(x[(n_div+1):n])
+    println(neg_log_likelihood + sum(1.0*x[(n_div+1):n]))
+    io = open("/Users/davidhunter/nlopt/code_test_nlopt_project/output_data/lambda1_ccsa.txt", "a")
+    writedlm(io, neg_log_likelihood + sum(1.0*x[(n_div+1):n]))
+    close(io)
+    return neg_log_likelihood + sum(1.0*x[(n_div+1):n])
 end
 
 function myconstraints(result::Vector, x::Vector, grad::Matrix)
@@ -88,9 +92,10 @@ z = zeros(n)
 opt = Opt(:LD_CCSAQ, n)
 opt.lower_bounds = lb
 opt.upper_bounds = ub
-opt.xtol_abs = 1e-5
+opt.stopval = 59.843537754
+
 opt.min_objective = (x,grad) -> myfunc(x,grad,A,y)
-inequality_constraint!(opt, myconstraints, fill(0.0,n)) # Doing this also helps otherwise it gets stuck
+inequality_constraint!(opt, myconstraints, fill(0.01,n)) # Doing this also helps otherwise it gets stuck
 
 
 (minf,minx,ret) = optimize(opt, z)
